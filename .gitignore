@@ -1,3 +1,6 @@
+# Ignore these directories and files used inside the HPC
+dataset/HDFSv1/
+
 # Personal guidance file for this project
 guidance/
 
