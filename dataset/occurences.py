@@ -1,7 +1,7 @@
 import numpy as np
 
 # Load the .npz file with allow_pickle=True
-data = np.load("HDFS.npz", allow_pickle=True)
+data = np.load("HDFSv1/preprocessed/HDFS.npz", allow_pickle=True)
 
 # Get the y_data array
 y_data = data['y_data']

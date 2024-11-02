@@ -1,7 +1,7 @@
 import numpy as np
 
 # Load the .npz file with allow_pickle=True
-data = np.load("HDFS.npz", allow_pickle=True)
+data = np.load("HDFSv1/preprocessed/HDFS.npz", allow_pickle=True)
 
 # List all arrays in the file
 print("Arrays in HDFS.npz:", data.files)
