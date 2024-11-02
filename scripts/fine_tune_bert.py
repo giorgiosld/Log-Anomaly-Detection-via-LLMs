@@ -10,6 +10,5 @@ if __name__ == "__main__":
     print("Prepared datasets..")
     train_encodings, val_encodings = tokenize_data(train_texts, val_texts)
     print("Tokenized data..")
-    print("Starting SFT model..")
     train_model(train_encodings, train_labels, val_encodings, val_labels)
 
