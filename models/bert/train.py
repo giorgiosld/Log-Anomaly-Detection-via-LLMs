@@ -33,12 +33,13 @@ def train_model(train_encodings, train_labels, val_encodings, val_labels):
     training_args = TrainingArguments(
         output_dir='./results_bert',
         eval_strategy="epoch",
-        per_device_train_batch_size=8,
-        per_device_eval_batch_size=8,
+        per_device_train_batch_size=32,
+        per_device_eval_batch_size=32,
         num_train_epochs=3,
         weight_decay=0.01,
         logging_dir='./logs_bert',
         logging_steps=10,
+        fp16=True,
     )
 
     trainer = Trainer(
