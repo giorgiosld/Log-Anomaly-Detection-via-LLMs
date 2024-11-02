@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 from transformers import BertTokenizer
 
 def load_data(npz_path):
-    data = np.load(npz_path)
+    data = np.load(npz_path, allow_pickle=True)
     x_data, y_data = data['x_data'], data['y_data']
     x_data_str = [' '.join(events) for events in x_data]
     return x_data_str, y_data
