@@ -2,4 +2,4 @@ numpy
 scikit-learn
 torch
 transformers
-
+transformers[torch]
