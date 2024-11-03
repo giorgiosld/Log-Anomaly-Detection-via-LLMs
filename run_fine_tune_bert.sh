@@ -1,21 +1,26 @@
 #!/bin/bash
 
+#SBATCH --job-name=log_anomaly_detection_sft_bert
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=giorgio24@ru.is
-#SBATCH --partition=48cpu_192mem  # request node from a specific partition
-#SBATCH --nodes=2                 # number of nodes
-#SBATCH --ntasks-per-node=48      # 48 cores per node (96 in total)
-#SBATCH --mem-per-cpu=3900        # MB RAM per cpu core
-#SBATCH --time=0-04:00:00         # run for 4 hours maximum (DD-HH:MM:SS)
-#SBATCH --hint=nomultithread      # Suppress multithread
-#SBATCH --output=bert_fine_tune_output.log
-#SBATCH --error=bert_fine_tune_errors.log
+#SBATCH --partition=gpu-1xA100
+#SBATCH --gpus=1
+#SBATCH --cpus-per-gpu=8
+#SBATCH --mem=64G
+#SBATCH --time=0-02:00:00         
+#SBATCH --hint=nomultithread    
+#SBATCH --output=/hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs/logs/bert_fine_tune_output.out
+#SBATCH --error=/hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs/logs/bert_fine_tune_errors.err
+#SBATCH --chdir=/hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs
 
-# Activate the virtual environment
-source $(pwd)/venv/bin/activate
-
+# Activate virtual environment if it doesn't exist
+VENV_PATH="/hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs/venv"
 # Add the current directory to PYTHONPATH
-export PYTHONPATH=$(pwd)
+
+source $VENV_PATH/bin/activate
+
+# Set environment variables
+export PYTHONPATH=/hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs
 
 # Run the fine-tune script
 python scripts/fine_tune_bert.py
