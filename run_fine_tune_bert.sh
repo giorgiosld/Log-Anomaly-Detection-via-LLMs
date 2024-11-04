@@ -20,7 +20,7 @@ ml load NVHPC/23.7-CUDA-12.1.1
 ml load Anaconda3/2023.09-0
 
 # Activate the Conda environment
-source activate log_anomaly_env
+source activate /hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs/conda_venv 
 
 # Verify the environment is activated
 echo "Environment activated: $CONDA_PREFIX"

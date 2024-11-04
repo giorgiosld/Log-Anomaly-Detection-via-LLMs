@@ -30,6 +30,14 @@ def train_model(train_encodings, train_labels, val_encodings, val_labels):
     model = get_model()
     print("Loaded BERT..")
 
+    # Check CUDA version
+    print(torch.version.cuda)
+    print(torch.cuda.is_available)
+    # Check if CUDA is available and move the model to GPU
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    print(f"Using device: {device}")
+
     training_args = TrainingArguments(
         output_dir='./results_bert',
         eval_strategy="epoch",
@@ -39,7 +47,7 @@ def train_model(train_encodings, train_labels, val_encodings, val_labels):
         weight_decay=0.01,
         logging_dir='./logs_bert',
         logging_steps=10,
-        fp16=True,
+        fp16=True if torch.cuda.is_available() else False,
     )
 
     trainer = Trainer(
