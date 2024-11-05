@@ -4,15 +4,18 @@ from models.llama.model import get_model
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 class PromptCompletionDataset(torch.utils.data.Dataset):
-    def __init__(self, encodings):
+    def __init__(self, encodings, labels):
         self.encodings = encodings
+        self.labels = labels
 
     def __getitem__(self, idx):
         item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+        # Labels are used as target responses for each prompt
+        item['labels'] = torch.tensor(self.labels[idx], dtype=torch.long)
         return item
 
     def __len__(self):
-        return len(self.encodings['input_ids'])
+        return len(self.labels)
 
 def compute_metrics(p):
     preds = p.predictions.argmax(-1)
@@ -21,9 +24,18 @@ def compute_metrics(p):
     acc = accuracy_score(labels, preds)
     return {"accuracy": acc, "f1": f1, "precision": precision, "recall": recall}
 
-def train_model(train_encodings, val_encodings):
-    train_dataset = PromptCompletionDataset(train_encodings)
-    val_dataset = PromptCompletionDataset(val_encodings)
+def prepare_labels(completions):
+    labels = [1 if completion == "Label: Anomaly" else 0 for completion in completions]
+    return labels
+
+def train_model(train_prompts, train_completions, val_prompts, val_completions, train_encodings, val_encodings):
+    # Convert the completion labels into binary labels
+    train_labels = prepare_labels(train_completions)
+    val_labels = prepare_labels(val_completions)
+    
+    # Prepare the dataset objects for training and validation
+    train_dataset = PromptCompletionDataset(train_encodings, train_labels)
+    val_dataset = PromptCompletionDataset(val_encodings, val_labels)
     
     model = get_model()
     print("Loaded LLaMA..")
@@ -40,8 +52,8 @@ def train_model(train_encodings, val_encodings):
         output_dir='./results_llama',
         eval_strategy="epoch",
         save_strategy="epoch",
-        per_device_train_batch_size=16,  
-        per_device_eval_batch_size=16,
+        per_device_train_batch_size=4, 
+        per_device_eval_batch_size=4,
         num_train_epochs=10,
         learning_rate=1e-5,
         weight_decay=0.01,
@@ -52,7 +64,6 @@ def train_model(train_encodings, val_encodings):
         load_best_model_at_end=True,
     )
 
-    # Define the trainer with the appropriate callbacks for early stopping
     trainer = Trainer(
         model=model,
         args=training_args,

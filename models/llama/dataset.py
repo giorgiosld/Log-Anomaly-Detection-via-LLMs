@@ -1,6 +1,6 @@
 import json
 from sklearn.model_selection import train_test_split
-from transformers import LlamaTokenizer
+from transformers import LlamaTokenizer, AutoTokenizer
 
 # Load the prompt-completion data from JSONL
 def load_prompt_completion_data(jsonl_path):
@@ -21,11 +21,31 @@ def prepare_datasets(prompts, completions):
 
 # Tokenize prompt-completion pairs using LLaMA tokenizer
 def tokenize_data(train_prompts, train_completions, val_prompts, val_completions, max_length=128):
-    tokenizer = LlamaTokenizer.from_pretrained('meta-llama/Llama-3.2-3B')
+    tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-3B", token="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")
     
+    tokenizer.pad_token = tokenizer.eos_token
+    
+    # Concatenate prompts and completions
+    train_inputs = [f"{prompt} {completion}" for prompt, completion in zip(train_prompts, train_completions)]
+    val_inputs = [f"{prompt} {completion}" for prompt, completion in zip(val_prompts, val_completions)]
+    
+
     # Tokenize prompts and completions together
-    train_encodings = tokenizer(train_prompts, text_pair=train_completions, truncation=True, padding=True, max_length=max_length)
-    val_encodings = tokenizer(val_prompts, text_pair=val_completions, truncation=True, padding=True, max_length=max_length)
+    train_encodings = tokenizer(
+        train_inputs,
+        truncation=True,
+        padding=True,
+        max_length=max_length,
+        return_tensors="pt"
+    )
     
+    val_encodings = tokenizer(
+        val_inputs,
+        truncation=True,
+        padding=True,
+        max_length=max_length,
+        return_tensors="pt"
+    )
+
     return train_encodings, val_encodings
 
