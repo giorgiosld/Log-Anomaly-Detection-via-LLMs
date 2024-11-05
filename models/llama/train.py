@@ -9,9 +9,12 @@ class PromptCompletionDataset(torch.utils.data.Dataset):
         self.labels = labels
 
     def __getitem__(self, idx):
-        item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+        item = {key: val[idx].clone().detach() for key, val in self.encodings.items()}
         # Labels are used as target responses for each prompt
-        item['labels'] = torch.tensor(self.labels[idx], dtype=torch.long)
+        input_length = self.encodings['input_ids'][idx].size(0)
+        label = torch.tensor([self.labels[idx]] * input_length, dtype=torch.long)
+
+        item['labels'] = label
         return item
 
     def __len__(self):
@@ -30,9 +33,9 @@ def prepare_labels(completions):
 
 def train_model(train_prompts, train_completions, val_prompts, val_completions, train_encodings, val_encodings):
     # Convert the completion labels into binary labels
-    train_labels = prepare_labels(train_completions)
-    val_labels = prepare_labels(val_completions)
-    
+    train_labels = [1 if completion == "Label: Anomaly" else 0 for completion in train_completions]
+    val_labels = [1 if completion == "Label: Anomaly" else 0 for completion in val_completions]
+
     # Prepare the dataset objects for training and validation
     train_dataset = PromptCompletionDataset(train_encodings, train_labels)
     val_dataset = PromptCompletionDataset(val_encodings, val_labels)
@@ -52,8 +55,9 @@ def train_model(train_prompts, train_completions, val_prompts, val_completions, 
         output_dir='./results_llama',
         eval_strategy="epoch",
         save_strategy="epoch",
-        per_device_train_batch_size=4, 
-        per_device_eval_batch_size=4,
+        per_device_train_batch_size=1, 
+        per_device_eval_batch_size=1,
+        gradient_accumulation_steps=4,
         num_train_epochs=10,
         learning_rate=1e-5,
         weight_decay=0.01,
@@ -73,6 +77,8 @@ def train_model(train_prompts, train_completions, val_prompts, val_completions, 
         callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
     )
 
+    print("Cleaning cache..")
+    torch.cuda.empty_cache()
     print("Starting training LLaMA..")
     trainer.train()
 

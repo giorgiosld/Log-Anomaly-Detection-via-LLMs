@@ -20,27 +20,22 @@ def prepare_datasets(prompts, completions):
     return train_prompts, val_prompts, train_completions, val_completions
 
 # Tokenize prompt-completion pairs using LLaMA tokenizer
-def tokenize_data(train_prompts, train_completions, val_prompts, val_completions, max_length=128):
+def tokenize_data(train_prompts, train_completions, val_prompts, val_completions, max_length=64):
     tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-3B", token="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")
-    
+ 
     tokenizer.pad_token = tokenizer.eos_token
-    
-    # Concatenate prompts and completions
-    train_inputs = [f"{prompt} {completion}" for prompt, completion in zip(train_prompts, train_completions)]
-    val_inputs = [f"{prompt} {completion}" for prompt, completion in zip(val_prompts, val_completions)]
-    
-
-    # Tokenize prompts and completions together
+ 
+    # Tokenize prompts (inputs) only
     train_encodings = tokenizer(
-        train_inputs,
+        train_prompts,
         truncation=True,
         padding=True,
         max_length=max_length,
         return_tensors="pt"
     )
-    
+ 
     val_encodings = tokenizer(
-        val_inputs,
+        val_prompts,
         truncation=True,
         padding=True,
         max_length=max_length,
