@@ -1,3 +1,6 @@
+# Ignore gradio
+.gradio/
+
 # Ignore conda environment
 conda_venv/
 
