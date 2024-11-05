@@ -36,12 +36,12 @@ interface = gr.Interface(
     title="Log Anomaly Detection",
     description="Enter a log sequence to determine if it is anomalous or normal.",
     examples=[
-        "INFO 2024-11-03 12:35:27 Node started successfully.",
-        "ERROR 2024-11-03 12:36:00 Block received is corrupted. Verification failed."
+        ["E5 E22 E11 E11 E9 E26 -- Example labeled as normal"],  
+        ["E5 E5 E22 E7          -- Example labeled as anomaly"]
     ]
 )
 
 # Launch the Gradio interface
 if __name__ == "__main__":
-    interface.launch()
+    interface.launch(share=True)
 
