@@ -10,5 +10,6 @@ if __name__ == "__main__":
     print("Prepared datasets..")
     train_encodings, val_encodings = tokenize_data(train_prompts, train_completions, val_prompts, val_completions)
     print("Tokenized data..")
-    train_model(train_encodings, val_encodings)
+    train_model(train_prompts, train_completions, val_prompts, val_completions, train_encodings, val_encodings)
+
 
