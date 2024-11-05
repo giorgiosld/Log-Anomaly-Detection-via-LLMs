@@ -1,5 +1,5 @@
 import torch
-from transformers import Trainer, TrainingArguments
+from transformers import Trainer, TrainingArguments, EarlyStoppingCallback
 from models.bert.model import get_model
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
@@ -41,13 +41,17 @@ def train_model(train_encodings, train_labels, val_encodings, val_labels):
     training_args = TrainingArguments(
         output_dir='./results_bert',
         eval_strategy="epoch",
-        per_device_train_batch_size=32,
-        per_device_eval_batch_size=32,
-        num_train_epochs=3,
+        save_strategy="epoch",
+        per_device_train_batch_size=16,
+        per_device_eval_batch_size=16,
+        num_train_epochs=10,
+        learning_rate=1e-5,
         weight_decay=0.01,
         logging_dir='./logs_bert',
         logging_steps=10,
         fp16=True if torch.cuda.is_available() else False,
+        max_grad_norm=1.0,
+        load_best_model_at_end=True
     )
 
     trainer = Trainer(
@@ -55,9 +59,15 @@ def train_model(train_encodings, train_labels, val_encodings, val_labels):
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
-        compute_metrics=compute_metrics
+        compute_metrics=compute_metrics,
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
     )
 
     print("Starting training BERT..")
     trainer.train()
 
+    print("Fine Tuning finished")
+    save_dir = "/hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs/result/bert_sft"
+    model.save_pretrained(save_dir)
+
+    print(f"Model saved to {save_dir}")
