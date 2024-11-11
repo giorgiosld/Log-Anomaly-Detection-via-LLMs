@@ -1,3 +1,4 @@
+auth_token
 # Ignore gradio
 .gradio/
 
