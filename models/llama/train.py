@@ -15,7 +15,7 @@ def create_trainer(model, tokenizer, train_dataset, val_dataset, output_dir):
         eval_strategy="steps",
         eval_steps=100,
         save_steps=500,
-        warmup_steps=100,
+        warmup_steps=50,
         learning_rate=2e-5,
         
         # Modified precision handling
@@ -27,14 +27,24 @@ def create_trainer(model, tokenizer, train_dataset, val_dataset, output_dir):
         # Add gradient clipping
         max_grad_norm=1.0,
         # Add optimizations for A100
-        dataloader_num_workers=4,
+        dataloader_num_workers=6,
         gradient_checkpointing=True,  # Enable gradient checkpointing for memory efficiency
-        optim="adamw_torch"
+        optim="adamw_torch",
     )
+    '''
+        # Additional speed optimizations
+        group_by_length=True,            # Add sequence length batching
+        length_column_name="length",
+        report_to="none",                # Disable wandb/tensorboard logging
+
+        # Add dynamic padding
+        dataloader_pin_memory=True,
+
+        # Disable evaluation if you don't need it during training
+        evaluation_strategy="no",
+    '''
+    #)
     
-
-
-
     trainer = Trainer(
         model=model,
         args=training_args,

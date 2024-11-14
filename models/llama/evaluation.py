@@ -18,9 +18,11 @@ def evaluate_model(model, tokenizer, test_dataset):
             
             outputs = model.generate(
                 **inputs,
-                max_length=128,
+                max_new_tokens=64,
                 num_return_sequences=1,
-                pad_token_id=tokenizer.pad_token_id
+                pad_token_id=tokenizer.pad_token_id,
+                do_sample=False,  
+                temperature=1.0,
             )
             
             pred_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
