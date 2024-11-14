@@ -24,36 +24,60 @@ def compute_metrics(p):
     acc = accuracy_score(labels, preds)
     return {"accuracy": acc, "f1": f1, "precision": precision, "recall": recall}
 
-'''
-def compute_metrics(p):
-    preds = p.predictions.argmax(-1)
-    labels = p.label_ids
-    
-    # Calculate metrics with focus on minority class
-    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='binary')
-    
-    # Calculate per-class metrics
-    precision_per_class, recall_per_class, f1_per_class, _ = precision_recall_fscore_support(
-        labels, preds, average=None
-    )
-    
-    # Calculate balanced accuracy
-    balanced_acc = balanced_accuracy_score(labels, preds)
-    
-    return {
-        "accuracy": accuracy_score(labels, preds),
-        "balanced_accuracy": balanced_acc,
-        "f1": f1,
-        "precision": precision,
-        "recall": recall,
-        "normal_f1": f1_per_class[0],
-        "anomaly_f1": f1_per_class[1],
-        "normal_precision": precision_per_class[0],
-        "anomaly_precision": precision_per_class[1],
-        "normal_recall": recall_per_class[0],
-        "anomaly_recall": recall_per_class[1]
-    }
-'''
+class MetricsCallback(EarlyStoppingCallback):
+    def __init__(self, early_stopping_patience=5, early_stopping_threshold=0.01):
+        super().__init__(
+            early_stopping_patience=early_stopping_patience,
+            early_stopping_threshold=early_stopping_threshold
+        )
+        # Initialize with steps and epochs tracking
+        self.training_metrics = {
+            'steps': [], 'epochs': [], 'loss': [],
+            'accuracy': [], 'f1': [], 'precision': [], 'recall': []
+        }
+        self.evaluation_metrics = {
+            'steps': [], 'epochs': [], 'loss': [],
+            'accuracy': [], 'f1': [], 'precision': [], 'recall': []
+        }
+        self.current_train_metrics = {}
+
+    def on_evaluate(self, args, state, control, metrics=None, **kwargs):
+        """Called after evaluation"""
+        if metrics:
+            step = state.global_step
+            epoch = state.epoch
+            
+            self.evaluation_metrics['steps'].append(step)
+            self.evaluation_metrics['epochs'].append(epoch)
+            self.evaluation_metrics['loss'].append(metrics.get('eval_loss', 0))
+            self.evaluation_metrics['accuracy'].append(metrics.get('eval_accuracy', 0))
+            self.evaluation_metrics['f1'].append(metrics.get('eval_f1', 0))
+            self.evaluation_metrics['precision'].append(metrics.get('eval_precision', 0))
+            self.evaluation_metrics['recall'].append(metrics.get('eval_recall', 0))
+
+    def on_step_end(self, args, state, control, **kwargs):
+        """Called after each training step"""
+        if self.current_train_metrics and state.global_step % args.logging_steps == 0:
+            self.training_metrics['steps'].append(state.global_step)
+            self.training_metrics['epochs'].append(state.epoch)
+            self.training_metrics['loss'].append(self.current_train_metrics.get('loss', 0))
+            self.training_metrics['accuracy'].append(self.current_train_metrics.get('accuracy', 0))
+            self.training_metrics['f1'].append(self.current_train_metrics.get('f1', 0))
+            self.training_metrics['precision'].append(self.current_train_metrics.get('precision', 0))
+            self.training_metrics['recall'].append(self.current_train_metrics.get('recall', 0))
+
+    def on_prediction_step(self, args, state, control, outputs=None, **kwargs):
+        """Called after each prediction step during training"""
+        if outputs and hasattr(outputs, 'metrics'):
+            self.current_train_metrics = outputs.metrics
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        """Existing log handling"""
+        if logs:
+            # Update early stopping as before
+            metric_value = logs.get("eval_f1")
+            if metric_value:
+                self.check_metric_value(args, state, control, metric_value)
 
 class CustomTrainer(Trainer):
     def __init__(self, class_weights, *args, **kwargs):
@@ -77,36 +101,6 @@ class CustomTrainer(Trainer):
         loss = loss_fct(logits.view(-1, 2), labels.view(-1))
 
         return (loss, outputs) if return_outputs else loss
-
-class F1EarlyStoppingCallback(EarlyStoppingCallback):
-    def __init__(self, early_stopping_patience=5, early_stopping_threshold=0.01):
-        super().__init__(
-            early_stopping_patience=early_stopping_patience,
-            early_stopping_threshold=early_stopping_threshold
-        )
-        self.early_stopping_patience = early_stopping_patience
-        self.early_stopping_threshold = early_stopping_threshold
-        self.metric_name = "eval_f1"
-
-    def check_metric_value(self, args, state, control, metric_value):
-        # Only stop if we've trained for at least 1 epoch
-        if state.epoch < 1.0:
-            return False
-            
-        if not self.best_metric:
-            self.best_metric = metric_value
-            return False
-            
-        if metric_value < self.best_metric + self.early_stopping_threshold:
-            self.no_improvement_count += 1
-        else:
-            self.no_improvement_count = 0
-            self.best_metric = metric_value
-            
-        if self.no_improvement_count >= self.early_stopping_patience:
-            control.should_training_stop = True
-        return False
-
 
 
 def train_model(train_encodings, train_labels, val_encodings, val_labels):
@@ -132,8 +126,6 @@ def train_model(train_encodings, train_labels, val_encodings, val_labels):
     num_class_0 = sum(1 for label in train_labels if label == 0)
     num_class_1 = sum(1 for label in train_labels if label == 1)
     
-    #weight_class_0 = total_samples / (2 * num_class_0)
-    #weight_class_1 = total_samples / (2 * num_class_1)
     weight_class_0 = 1.0
     weight_class_1 = min(num_class_0 / num_class_1, 10.0)
 
@@ -158,7 +150,6 @@ def train_model(train_encodings, train_labels, val_encodings, val_labels):
         load_best_model_at_end=True,
         metric_for_best_model="f1",
         greater_is_better=True,
-        #warmup_steps=num_warmup_steps,
         warmup_ratio=0.1,
         gradient_checkpointing=True,  
         gradient_accumulation_steps=2,
@@ -171,57 +162,11 @@ def train_model(train_encodings, train_labels, val_encodings, val_labels):
         dataloader_drop_last=False,
         dataloader_num_workers=4,
     )
-    '''training_args = TrainingArguments(
-        output_dir='./results_bert',
-        eval_strategy="epoch",
-        save_strategy="epoch",
-        per_device_train_batch_size=16,
-        per_device_eval_batch_size=16,
-        num_train_epochs=10,
-        learning_rate=1e-5,
-        weight_decay=0.01,
-        logging_dir='./logs_bert',
-        logging_steps=10,
-        fp16=True if torch.cuda.is_available() else False,
-        max_grad_norm=1.0,
-        load_best_model_at_end=True
-    )'''
     
-    class MetricsCallback(EarlyStoppingCallback):
-        def __init__(self, early_stopping_patience=5, early_stopping_threshold=0.01):
-            super().__init__(
-                early_stopping_patience=early_stopping_patience,
-                early_stopping_threshold=early_stopping_threshold
-            )
-            self.training_metrics = {'loss': [], 'accuracy': [], 'f1': [], 'precision': [], 'recall': []}
-            self.evaluation_metrics = {'loss': [], 'accuracy': [], 'f1': [], 'precision': [], 'recall': []}
-
-        def on_log(self, args, state, control, logs=None, **kwargs):
-            if logs is not None:
-                step_metrics = {}
-                for k, v in logs.items():
-                    if isinstance(v, (int, float)):
-                        step_metrics[k] = v
-
-                if 'loss' in logs:
-                    if 'eval' in logs.get('step', ''):
-                        for metric, value in step_metrics.items():
-                            if metric.startswith('eval_') and metric[5:] in self.evaluation_metrics:
-                                self.evaluation_metrics[metric[5:]].append(value)
-                    else:
-                        for metric, value in step_metrics.items():
-                            if metric in self.training_metrics:
-                                self.training_metrics[metric].append(value)
-
     # Create callbacks
     metrics_callback = MetricsCallback(
         early_stopping_patience=5,
         early_stopping_threshold=0.01
-    )
-
-    early_stopping = F1EarlyStoppingCallback(
-        early_stopping_patience=5,       # Increased patience
-        early_stopping_threshold=0.01    # Need 1% improvement in F1
     )
 
     trainer = CustomTrainer(
@@ -233,16 +178,6 @@ def train_model(train_encodings, train_labels, val_encodings, val_labels):
         compute_metrics=compute_metrics,
         callbacks=[metrics_callback] 
     )
-    
-    '''trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=val_dataset,
-        compute_metrics=compute_metrics,
-        #callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
-        callbacks=[metrics_callback]
-    )'''
 
     print("\nTraining configuration:")
     print(f"Number of training examples: {len(train_dataset)}")

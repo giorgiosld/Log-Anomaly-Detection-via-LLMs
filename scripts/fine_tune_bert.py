@@ -8,16 +8,21 @@ if __name__ == "__main__":
     x_data_str, y_data = load_data(npz_path)
     print("Loaded data..")
 
-    train_texts, val_texts, train_labels, val_labels = prepare_datasets(x_data_str, y_data)
-    print("Prepared datasets..")
-    print("\nSplit sizes:")
-    print(f"Training set: {len(train_texts)} samples")
-    print(f"Validation set: {len(val_texts)} samples")
+    train_texts, val_texts, test_texts, train_labels, val_labels, test_labels = prepare_datasets(x_data_str, y_data)
 
-    train_encodings, val_encodings = tokenize_data(train_texts, val_texts)
+    train_encodings, val_encodings, test_encodings = tokenize_data(train_texts, val_texts, test_texts)
     print("Tokenized data..")
     
     trainer, metrics_callback = train_model(train_encodings, train_labels, val_encodings, val_labels)
     
+    # Create datasets for evaluation
     val_dataset = HDFSDataset(val_encodings, val_labels)
-    evaluate_model(trainer, metrics_callback, val_dataset)
+    test_dataset = HDFSDataset(test_encodings, test_labels)
+
+    # Evaluate on validation set
+    print("\nValidation Set Evaluation:")
+    evaluate_model(trainer, metrics_callback, val_dataset, save_dir='./results_bert/validation')
+
+    # Final evaluation on test set
+    print("\nTest Set Evaluation (Final Results):")
+    evaluate_model(trainer, metrics_callback, test_dataset, save_dir='./results_bert/test')
