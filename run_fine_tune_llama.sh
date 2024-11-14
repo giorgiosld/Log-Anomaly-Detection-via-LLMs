@@ -3,13 +3,13 @@
 #SBATCH --job-name=log_anomaly_detection_sft_llama
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=giorgio24@ru.is
-#SBATCH --partition=gpu-8xA100
+#SBATCH --partition=gpu-1xA100
 #SBATCH --ntasks-per-node=48
 #SBATCH --mem=64G
-#SBATCH --time=0-20:00:00         
+#SBATCH --time=0-31:00:00         
 #SBATCH --hint=nomultithread    
-#SBATCH --output=/hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs/logs/llama_fine_tune_output.out
-#SBATCH --error=/hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs/logs/llama_fine_tune_errors.err
+#SBATCH --output=/hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs/logs/llama_fine_tune_output2.out
+#SBATCH --error=/hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs/logs/llama_fine_tune_errors2.err
 #SBATCH --chdir=/hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs
 
 # Loading necessary modules
@@ -28,7 +28,4 @@ echo "Environment activated: $CONDA_PREFIX"
 # Set environment variables
 export PYTHONPATH=/hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs
 
-# Run the fine-tun script
-# torchrun --nproc_per_node=8 scripts/fine_tune_llama.py
 python scripts/fine_tune_llama.py
-

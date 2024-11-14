@@ -6,7 +6,7 @@
 #SBATCH --partition=gpu-1xA100
 #SBATCH --ntasks-per-node=48
 #SBATCH --mem=64G
-#SBATCH --time=0-06:00:00         
+#SBATCH --time=0-18:00:00         
 #SBATCH --hint=nomultithread    
 #SBATCH --output=/hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs/logs/bert_fine_tune_output.out
 #SBATCH --error=/hpchome/giorgio24/Log-Anomaly-Detection-via-LLMs/logs/bert_fine_tune_errors.err
