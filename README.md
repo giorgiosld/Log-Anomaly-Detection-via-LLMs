@@ -17,11 +17,14 @@ anomaly detection techniques that are particularly relevant in the domains of AI
 ## Project Structure
 The repository is organized as follows:
 - `dataset/`: Contains resources related to the dataset, including scripts for downloading, analyzing, and preprocessing the dataset. It also contains the raw dataset files used for training and evaluation.
+- `deployment/`: Contains script for deploying the trained model for presentation.
 - `models/`: Holds model-specific code. Currently, it includes subdirectories for BERT model. Each subdirectory contains code for data loading, model initialization, and training.
+- `result/`: Contains the results of the experiments, including model evaluation metrics and visualizations.
 - `scripts/`: Contains main scripts used to fine-tune models. These scripts serve as entry points for training models.
 - `LICENSE`: Contains license information for the project.
 - `requirements.txt`: Lists the dependencies required to run the code.
 - `run_fine_tune_bert.sh`: A shell script to execute the fine-tuning of the BERT model in the HPC environment. It contains the necessary SBATCH configurations to run the training process efficiently on a cluster.
+- `run_fine_tune_llama.sh`: A shell script to execute the fine-tuning of the LLAMA model in the HPC environment. It contains the necessary SBATCH configurations to run the training process efficiently on a cluster.
 
 ## Motivation
 This project highlights my interest in the intersection of Artificial Intelligence, Cybersecurity, and Natural Language 
@@ -34,5 +37,4 @@ to solve practical cybersecurity challenges in large, distributed systems.
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgements
-- Professor Stefán Ólafsson for academic guidance throughout the project.
 - HPC Iceland for the computational resources that made large-scale training feasible.
