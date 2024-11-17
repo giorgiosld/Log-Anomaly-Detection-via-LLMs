@@ -12,7 +12,7 @@ def main():
     data_path = "dataset/HDFSv1/preprocessed/prompt_completion_data.jsonl" 
     output_dir = "results_llama_2"
     model_name = "meta-llama/Llama-3.2-1B"
-    hf_token = "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" 
+    hf_token = "your_huggingface_token"
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
